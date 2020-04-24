@@ -12,17 +12,18 @@ defmodule Servy.Handler do
 
   @doc "Transforms the request into a response."
   def handle(request) do
-    request 
+    request
     |> parse
     |> rewrite_path
-    |> log 
-    |> route 
+    |> log
+    |> route
     |> track
+    |> put_content_length
     |> format_response
   end
 
   def route(%Conv{ method: "GET", path: "/wildthings" } = conv) do
-    %{ conv | status: 200, resp_body: "Bears, Lions, Tigers" }          
+    %{ conv | status: 200, resp_body: "Bears, Lions, Tigers" }
   end
 
   def route(%Conv{ method: "GET", path: "/api/bears" } = conv) do
@@ -65,11 +66,18 @@ defmodule Servy.Handler do
     %{ conv | status: 500, resp_body: "File error: #{reason}" }
   end
 
+  def put_content_length(conv) do
+    headers = Map.put(conv.resp_headers, "Content-Length", String.length(conv.resp_body))
+    # Map.put(conv, 'resp_headers', headers)
+    %{ conv | resp_headers: headers }
+  end
+
   def format_response(%Conv{} = conv) do
+    # Content-Length: #{String.length(conv.resp_body)}\r
     """
     HTTP/1.1 #{Conv.full_status(conv)}\r
-    Content-Type: #{conv.resp_content_type}\r
-    Content-Length: #{String.length(conv.resp_body)}\r
+    Content-Type: #{conv.resp_headers["Content-Type"]}\r
+    Content-Length: #{conv.resp_headers["Content-Length"]}\r
     \r
     #{conv.resp_body}
     """
