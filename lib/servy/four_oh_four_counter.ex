@@ -44,4 +44,9 @@ defmodule Servy.FourOhFourCounter do
   def handle_cast(:reset, _state) do
     %{}
   end
+
+  def handle_info(other, state) do
+    IO.puts("Unexpected message #{inspect(other)}")
+    state
+  end
 end
